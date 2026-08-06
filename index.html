@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Analytics Pro - Data Driven</title>
+    <title>AI Analytics Pro - Real Time</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -126,18 +126,18 @@
 
     <div class="container">
         <h1>Analytical Predictor</h1>
-        <div class="subtitle">Data-Driven Mathematical Models</div>
+        <div class="subtitle">Live API Data & Math Engine</div>
 
         <div class="btn-grid">
+            <button onclick="filterOdds(1.50)">Base: Odds 1.50</button>
             <button onclick="filterOdds(2.00)">Safe: Odds 2.00</button>
             <button onclick="filterOdds(5.00)">Mid: Odds 5.00</button>
             <button onclick="filterOdds(20.00)">High: Odds 20.00+</button>
-            <button onclick="filterOdds(50.00)">Pro: Odds 50.00+</button>
         </div>
 
         <div class="result-box" id="predictionResult">
             <div id="matchesOutput" class="loading">
-                Connecting to API Servers via Math Engine...
+                Connecting to Live API Servers...
             </div>
         </div>
     </div>
@@ -145,7 +145,6 @@
     <script>
         let analyzedMatches = [];
 
-        // Hashing function to generate deterministic numbers from team names
         function getHashValue(str) {
             let hash = 0;
             for (let i = 0; i < str.length; i++) {
@@ -154,25 +153,21 @@
             return hash;
         }
 
-        // Mathematical Engine to calculate match statistics
         function runMathEngine(fixture) {
             let homeHash = getHashValue(fixture.homeTeam);
             let awayHash = getHashValue(fixture.awayTeam);
             
-            // Base strength calculation (normalized 50-95)
             let homePower = 60 + (homeHash % 30);
-            let awayPower = 55 + (awayHash % 30); // Slight bias for home advantage
+            let awayPower = 55 + (awayHash % 30); 
             
             let totalPower = homePower + awayPower;
             let homeWinProb = (homePower / totalPower) * 100;
             let awayWinProb = (awayPower / totalPower) * 100;
             
-            // Expected Goals (xG) calculation
             let homeXG = ((homePower / 100) * 2.2).toFixed(2);
             let awayXG = ((awayPower / 100) * 1.8).toFixed(2);
             let totalXG = parseFloat(homeXG) + parseFloat(awayXG);
 
-            // Determine analytical pick
             let pick = "";
             let confidence = 0;
             let odd = 0;
@@ -194,7 +189,6 @@
                 confidence = 75;
             }
 
-            // Calculate True Odds based on probability + bookmaker margin (1.05)
             odd = (100 / confidence) * 1.05;
             if (odd < 1.15) odd = 1.25;
 
@@ -202,14 +196,14 @@
                 homeTeam: fixture.homeTeam,
                 awayTeam: fixture.awayTeam,
                 league: fixture.league,
+                matchDate: fixture.matchDate,
                 matchTime: fixture.matchTime,
                 homePower: homePower.toFixed(0),
                 awayPower: awayPower.toFixed(0),
                 homeXG: homeXG,
                 awayXG: awayXG,
                 prediction: pick,
-                odd: odd.toFixed(2),
-                confidence: Math.min(confidence, 98).toFixed(1) + "%"
+                odd: odd.toFixed(2)
             };
         }
 
@@ -218,7 +212,6 @@
             let today = new Date().toISOString().split('T')[0];
 
             try {
-                // Using your new direct API key and correct host
                 let response = await fetch(`https://v3.football.api-sports.io/fixtures?date=${today}`, {
                     method: "GET",
                     headers: {
@@ -230,49 +223,52 @@
                 let data = await response.json();
                 
                 if (data.response && data.response.length > 0) {
-                    // Filter upcoming matches only, grabbing top 40 for good odds combinations
-                    let validFixtures = data.response.filter(match => match.fixture.status.short === "NS").slice(0, 40);
+                    let validFixtures = data.response.filter(match => match.fixture.status.short === "NS").slice(0, 50);
                     
-                    if(validFixtures.length === 0) validFixtures = data.response.slice(0, 40);
+                    if(validFixtures.length === 0) validFixtures = data.response.slice(0, 50);
 
-                    analyzedMatches = validFixtures.map(match => runMathEngine({
-                        homeTeam: match.teams.home.name,
-                        awayTeam: match.teams.away.name,
-                        league: match.league.name,
-                        matchTime: new Date(match.fixture.date).toLocaleTimeString('sw-TZ', {hour: '2-digit', minute:'2-digit'})
-                    }));
+                    analyzedMatches = validFixtures.map(match => {
+                        let matchDateObj = new Date(match.fixture.date);
+                        
+                        // Strict Timezone Formatting for Tanzania (EAT)
+                        let localTime = matchDateObj.toLocaleTimeString('sw-TZ', { 
+                            timeZone: 'Africa/Dar_es_Salaam', 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                        });
+                        let localDate = matchDateObj.toLocaleDateString('sw-TZ', { 
+                            timeZone: 'Africa/Dar_es_Salaam', 
+                            day: '2-digit', 
+                            month: '2-digit', 
+                            year: 'numeric' 
+                        });
+
+                        return runMathEngine({
+                            homeTeam: match.teams.home.name,
+                            awayTeam: match.teams.away.name,
+                            league: match.league.name,
+                            matchDate: localDate,
+                            matchTime: localTime
+                        });
+                    });
                     
-                    output.innerHTML = "<span style='color: #10b981;'>✅ Data synchronized. Math Engine Ready. Select your odds target.</span>";
+                    output.innerHTML = "<span style='color: #10b981;'>✅ Live Data Fetched Successfully. Select your odds target.</span>";
                 } else {
-                    throw new Error("No data returned or invalid key status.");
+                    throw new Error("No match data returned from API.");
                 }
             } catch (error) {
-                // Analytical Fallback Data if network blocks the request
-                let fallbackFixtures = [
-                    { homeTeam: "Real Madrid", awayTeam: "Sevilla", league: "La Liga", matchTime: "22:00" },
-                    { homeTeam: "Arsenal", awayTeam: "Brighton", league: "Premier League", matchTime: "18:30" },
-                    { homeTeam: "Bayern Munich", awayTeam: "Dortmund", league: "Bundesliga", matchTime: "19:30" },
-                    { homeTeam: "Inter", awayTeam: "AC Milan", league: "Serie A", matchTime: "21:45" },
-                    { homeTeam: "PSG", awayTeam: "Lille", league: "Ligue 1", matchTime: "23:00" },
-                    { homeTeam: "Liverpool", awayTeam: "Newcastle", league: "Premier League", matchTime: "17:00" },
-                    { homeTeam: "Barcelona", awayTeam: "Betis", league: "La Liga", matchTime: "20:00" },
-                    { homeTeam: "Juventus", awayTeam: "Roma", league: "Serie A", matchTime: "19:00" },
-                    { homeTeam: "Ajax", awayTeam: "PSV", league: "Eredivisie", matchTime: "16:45" },
-                    { homeTeam: "Porto", awayTeam: "Benfica", league: "Primeira Liga", matchTime: "23:30" }
-                ];
-                analyzedMatches = fallbackFixtures.map(match => runMathEngine(match));
-                output.innerHTML = "<span style='color: #facc15;'>⚠️ API Blocked (CORS). Offline Math Engine activated. Select target.</span>";
+                // Fake data removed completely. Shows exact error instead.
+                output.innerHTML = `<span style='color: #f87171;'>⚠️ Connection Failed. API could not fetch live matches. Reason: Network block or API Key limit reached. Please check your dashboard.</span>`;
             }
         }
 
         function filterOdds(targetOdd) {
             const output = document.getElementById("matchesOutput");
+            
             if (analyzedMatches.length === 0) {
-                output.innerHTML = "Processing mathematical models... Please wait.";
-                return;
+                return; // Do nothing if there's no real data
             }
 
-            // Randomize array to generate unique slips for the same target
             let shuffledMatches = [...analyzedMatches].sort(() => 0.5 - Math.random());
             let selected = [];
             let currentOdd = 1.0;
@@ -292,7 +288,7 @@
                     <div class="match-card">
                         <div class="match-header">
                             <span>🏆 ${m.league}</span>
-                            <span>⏰ ${m.matchTime}</span>
+                            <span>📅 ${m.matchDate} | ⏰ ${m.matchTime}</span>
                         </div>
                         <div class="match-title">${m.homeTeam} vs ${m.awayTeam}</div>
                         
@@ -324,7 +320,6 @@
             output.innerHTML = html;
         }
 
-        // Initialize API Fetch on load
         fetchLiveMatches();
     </script>
 </body>
