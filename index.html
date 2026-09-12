@@ -66,6 +66,7 @@
 
   .badge{font-size:10px;font-weight:800;padding:3px 8px;border-radius:20px;}
   .badge.unpaid{background:rgba(248,113,113,.15);color:var(--danger);}
+  .badge.partial{background:rgba(240,180,41,.15);color:var(--accent2);}
   .badge.paid{background:rgba(74,222,128,.15);color:var(--safe);}
 
   .empty{text-align:center;color:var(--muted);font-size:13px;padding:24px 10px;}
@@ -184,9 +185,11 @@ const T = {
     itemName:"Jina la Bidhaa", price:"Bei (kwa kimoja)", qty:"Idadi", addSale:"+ Ongeza Mauzo",
     customerName:"Jina la Mteja", amount:"Kiasi (Deni)", phone:"Simu (hiari)",
     itemDesc:"Bidhaa/Maelezo", addDebt:"+ Ongeza Deni",
-    fToday:"Leo", fWeek:"Wiki", fMonth:"Mwezi", fAll:"Zote", fUnpaid:"Bado", fPaid:"Yamelipwa",
+    fToday:"Leo", fWeek:"Wiki", fMonth:"Mwezi", fAll:"Zote", fUnpaid:"Bado", fPaid:"Imelipwa",
+    partial:"Sehemu Imelipwa", pay:"Lipa", paidSoFar:"Amelipa", remaining:"Deni Lililobaki",
+    enterPayment:"Weka kiasi analolipa sasa",
     noSales:"Hakuna mauzo bado kwa kipindi hiki.", noDebts:"Hakuna madeni kwa kipindi hiki.",
-    total:"Jumla", markPaid:"Amelipa", markUnpaid:"Bado", delete:"Futa",
+    total:"Jumla", grandTotal:"Jumla Kuu ya Madeni", markPaid:"Amelipa", markUnpaid:"Bado", delete:"Futa",
     confirmDelete:"Una uhakika unataka kufuta hii?",
     footer:"Duka Hesabu · Data yako inabaki kwenye simu yako pekee",
     fillItem:"Tafadhali jaza jina la bidhaa na bei.",
@@ -200,8 +203,10 @@ const T = {
     customerName:"Customer Name", amount:"Amount (Debt)", phone:"Phone (optional)",
     itemDesc:"Item/Description", addDebt:"+ Add Debt",
     fToday:"Today", fWeek:"Week", fMonth:"Month", fAll:"All", fUnpaid:"Unpaid", fPaid:"Paid",
+    partial:"Partially Paid", pay:"Pay", paidSoFar:"Paid so far", remaining:"Remaining",
+    enterPayment:"Enter the amount they're paying now",
     noSales:"No sales yet for this period.", noDebts:"No debts for this period.",
-    total:"Total", markPaid:"Mark Paid", markUnpaid:"Mark Unpaid", delete:"Delete",
+    total:"Total", grandTotal:"Grand Total Owed", markPaid:"Mark Paid", markUnpaid:"Mark Unpaid", delete:"Delete",
     confirmDelete:"Are you sure you want to delete this?",
     footer:"Duka Hesabu · Your data stays on your phone only",
     fillItem:"Please fill in the item name and price.",
@@ -344,10 +349,45 @@ function addDebt(){
   renderDebts(); renderSummary();
 }
 
-function toggleDebtPaid(id){
+function groupByCustomer(list){
+  const groups = {};
+  const order = [];
+  list.forEach(d=>{
+    const key = d.customer.trim().toLowerCase();
+    if(!groups[key]){
+      groups[key] = { name: d.customer.trim(), phone: d.phone, items: [] };
+      order.push(key);
+    }
+    groups[key].items.push(d);
+    if(!groups[key].phone && d.phone) groups[key].phone = d.phone;
+  });
+  return order.map(k=>groups[k]);
+}
+
+function getRemaining(d){
+  if(d.payments && d.payments.length){
+    const paidSum = d.payments.reduce((s,p)=>s+p.amt,0);
+    return Math.max(0, d.amount - paidSum);
+  }
+  return d.paid ? 0 : d.amount;
+}
+function getPaidSum(d){
+  if(d.payments && d.payments.length) return d.payments.reduce((s,p)=>s+p.amt,0);
+  return d.paid ? d.amount : 0;
+}
+
+function payDebt(id){
   const debts = loadDebts();
   const d = debts.find(x=>x.id===id);
-  if(d) d.paid = !d.paid;
+  if(!d) return;
+  const remaining = getRemaining(d);
+  const input = prompt(`${T[lang].enterPayment} (${T[lang].remaining}: ${fmt(remaining)})`, '');
+  if(input===null) return;
+  const amt = parseFloat(input);
+  if(isNaN(amt) || amt<=0) return;
+  if(!d.payments) d.payments = [];
+  d.payments.push({ amt: Math.min(amt, remaining), ts: Date.now() });
+  if(getRemaining(d) <= 0) d.paid = true;
   saveDebts(debts);
   renderDebts(); renderSummary();
 }
@@ -362,37 +402,62 @@ function renderDebts(){
   const list = document.getElementById('debtsList');
   if(!list) return;
   const all = loadDebts().sort((a,b)=>b.ts-a.ts);
+
+  const grandTotal = all.reduce((s,d)=> s + getRemaining(d), 0);
+
   let filtered = all;
-  if(debtsFilter==='unpaid') filtered = all.filter(d=>!d.paid);
-  if(debtsFilter==='paid') filtered = all.filter(d=>d.paid);
+  if(debtsFilter==='unpaid') filtered = all.filter(d=>getRemaining(d) > 0);
+  if(debtsFilter==='paid') filtered = all.filter(d=>getRemaining(d) <= 0);
 
   if(filtered.length===0){
     list.innerHTML = `<div class="empty">${T[lang].noDebts}</div>`;
     return;
   }
-  let total = 0;
+
+  const groups = groupByCustomer(filtered);
   let html = '';
-  filtered.forEach(d=>{
-    if(!d.paid) total += d.amount;
-    const dt = new Date(d.ts);
-    html += `
-      <div class="list-item">
-        <div class="li-main">
-          <div class="li-title">${d.customer} ${d.phone ? '· '+d.phone : ''}</div>
-          <div class="li-sub">${d.desc || ''} ${d.desc ? '· ' : ''}${dt.toLocaleDateString()}
-            <span class="badge ${d.paid?'paid':'unpaid'}">${d.paid?T[lang].fPaid:T[lang].fUnpaid}</span>
+
+  groups.forEach(g=>{
+    let groupRemaining = 0;
+    let itemsHtml = '';
+    g.items.forEach(d=>{
+      const remaining = getRemaining(d);
+      const paidSum = getPaidSum(d);
+      groupRemaining += remaining;
+      const dt = new Date(d.ts);
+      const status = remaining <= 0 ? T[lang].fPaid : (paidSum > 0 ? T[lang].partial : T[lang].fUnpaid);
+      const badgeClass = remaining <= 0 ? 'paid' : (paidSum > 0 ? 'partial' : 'unpaid');
+      const subNote = paidSum > 0
+        ? `${T[lang].paidSoFar}: ${fmt(paidSum)} · ${T[lang].remaining}: ${fmt(remaining)}`
+        : `${T[lang].amount}: ${fmt(d.amount)}`;
+
+      itemsHtml += `
+        <div class="list-item">
+          <div class="li-main">
+            <div class="li-title">${d.desc || (lang==='sw'?'Deni':'Debt')}</div>
+            <div class="li-sub">${dt.toLocaleDateString()} · ${subNote}
+              <span class="badge ${badgeClass}">${status}</span>
+            </div>
           </div>
+          <div class="li-amount ${remaining<=0?'paid':''}">${fmt(remaining)}</div>
+          <div class="li-actions">
+            ${remaining > 0 ? `<button class="icon-btn" onclick="payDebt(${d.id})" title="${T[lang].pay}">💰</button>` : ''}
+            <button class="icon-btn" onclick="deleteDebt(${d.id})" title="${T[lang].delete}">🗑️</button>
+          </div>
+        </div>`;
+    });
+
+    html += `
+      <div class="card" style="padding-bottom:6px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <div style="font-weight:800;font-size:15px;">👤 ${g.name}${g.phone ? ' · '+g.phone : ''}</div>
+          <div style="font-weight:800;color:var(--accent2);">${T[lang].total}: ${fmt(groupRemaining)}</div>
         </div>
-        <div class="li-amount ${d.paid?'paid':''}">${fmt(d.amount)}</div>
-        <div class="li-actions">
-          <button class="icon-btn" onclick="toggleDebtPaid(${d.id})" title="${d.paid?T[lang].markUnpaid:T[lang].markPaid}">${d.paid?'↩️':'✅'}</button>
-          <button class="icon-btn" onclick="deleteDebt(${d.id})" title="${T[lang].delete}">🗑️</button>
-        </div>
+        ${itemsHtml}
       </div>`;
   });
-  if(debtsFilter!=='paid'){
-    html += `<div class="card" style="text-align:center;font-weight:800;">${T[lang].total}: ${fmt(total)}</div>`;
-  }
+
+  html += `<div class="card" style="text-align:center;font-weight:800;">${T[lang].grandTotal}: ${fmt(grandTotal)}</div>`;
   list.innerHTML = html;
 }
 
@@ -404,7 +469,7 @@ function renderSummary(){
   const today = filterByPeriod(sales,'today').reduce((s,x)=>s+x.total,0);
   const week = filterByPeriod(sales,'week').reduce((s,x)=>s+x.total,0);
   const month = filterByPeriod(sales,'month').reduce((s,x)=>s+x.total,0);
-  const outstanding = debts.filter(d=>!d.paid).reduce((s,x)=>s+x.amount,0);
+  const outstanding = debts.reduce((s,x)=>s+getRemaining(x),0);
 
   document.getElementById('statSalesToday').textContent = fmt(today);
   document.getElementById('statSalesWeek').textContent = fmt(week);
