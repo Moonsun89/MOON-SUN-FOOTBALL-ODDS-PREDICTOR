@@ -132,6 +132,20 @@
         </div>
       </div>
     </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div class="label" data-i18n="weeklyPurchase">Manunuzi ya Wiki</div>
+          <div style="font-size:16px;font-weight:800;" id="statWeeklyPurchase">0</div>
+        </div>
+        <button class="icon-btn" onclick="openWeeklyPurchaseModal()" style="font-size:20px;">✏️</button>
+      </div>
+    </div>
+    <div class="card" style="text-align:center;">
+      <div class="label" id="profitLabel" data-i18n="toReachCost">Bado Kufikia Bei ya Bidhaa</div>
+      <div style="font-size:24px;font-weight:900;" id="statProfitLoss">0</div>
+    </div>
   </div>
 
   <!-- SALES TAB -->
@@ -202,6 +216,10 @@ const T = {
     tabSummary:"Muhtasari", tabSales:"Mauzo", tabDebts:"Madeni",
     salesToday:"Mauzo ya Leo", debtsOutstanding:"Madeni Yaliyobaki",
     salesWeek:"Mauzo Wiki Hii", salesMonth:"Mauzo Mwezi Huu",
+    weeklyPurchase:"Manunuzi ya Wiki", weeklyPurchaseTitle:"Weka Manunuzi ya Wiki Hii",
+    weeklyPurchaseLabel:"Kiasi ulichonunua bidhaa (wiki hii)", save:"Hifadhi",
+    toReachCost:"Bado Kufikia Bei ya Bidhaa", profit:"Faida", breakEven:"Sawa na Gharama",
+    noPurchaseSet:"Weka manunuzi ya wiki kuanza kulinganisha",
     itemName:"Jina la Bidhaa", price:"Bei (kwa kimoja)", qty:"Idadi", addSale:"+ Ongeza Mauzo",
     customerName:"Jina la Mteja", amount:"Kiasi (Deni)", phone:"Simu (hiari)",
     itemDesc:"Bidhaa/Maelezo", addDebt:"+ Ongeza Deni",
@@ -223,6 +241,10 @@ const T = {
     tabSummary:"Summary", tabSales:"Sales", tabDebts:"Debts",
     salesToday:"Today's Sales", debtsOutstanding:"Outstanding Debts",
     salesWeek:"This Week's Sales", salesMonth:"This Month's Sales",
+    weeklyPurchase:"Weekly Stock Purchase", weeklyPurchaseTitle:"Set This Week's Stock Purchase",
+    weeklyPurchaseLabel:"Amount spent on stock (this week)", save:"Save",
+    toReachCost:"Still to Reach Cost", profit:"Profit", breakEven:"Break Even",
+    noPurchaseSet:"Set weekly purchase to start comparing",
     itemName:"Item Name", price:"Price (per unit)", qty:"Quantity", addSale:"+ Add Sale",
     customerName:"Customer Name", amount:"Amount (Debt)", phone:"Phone (optional)",
     itemDesc:"Item/Description", addDebt:"+ Add Debt",
@@ -360,6 +382,54 @@ function doDeleteDebt(id){
   closeModal();
   renderDebts(); renderSummary();
 }
+function getWeekStartStr(d){
+  const dt = new Date(d || new Date());
+  const day = dt.getDay(); // 0=Sun..6=Sat
+  const diff = (day===0 ? -6 : 1) - day; // shift to Monday
+  dt.setDate(dt.getDate()+diff);
+  dt.setHours(0,0,0,0);
+  return todayStr(dt);
+}
+function getCalendarWeekSalesTotal(){
+  const weekStartStr = getWeekStartStr();
+  const weekStart = new Date(weekStartStr+'T00:00:00');
+  const weekEnd = new Date(weekStart.getTime() + 7*24*60*60*1000);
+  return loadSales().filter(s=>{
+    const d = new Date(s.ts);
+    return d >= weekStart && d < weekEnd;
+  }).reduce((s,x)=>s+x.total,0);
+}
+function loadWeeklyPurchase(){ try{ return JSON.parse(localStorage.getItem('duka_weekly_purchase')||'null'); }catch(e){ return null; } }
+function saveWeeklyPurchase(obj){ localStorage.setItem('duka_weekly_purchase', JSON.stringify(obj)); }
+function getCurrentWeekPurchaseAmount(){
+  const wp = loadWeeklyPurchase();
+  const ws = getWeekStartStr();
+  return (wp && wp.weekStart===ws) ? wp.amount : 0;
+}
+
+function openWeeklyPurchaseModal(){
+  const current = getCurrentWeekPurchaseAmount();
+  openModal(`
+    <div class="modal-title">${T[lang].weeklyPurchaseTitle}</div>
+    <label>${T[lang].weeklyPurchaseLabel}</label>
+    <input type="number" id="wpAmount" inputmode="decimal" value="${current||''}" placeholder="0">
+    <div class="modal-error" id="wpError"></div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" onclick="closeModal()">${T[lang].cancel}</button>
+      <button class="btn btn-primary" onclick="submitWeeklyPurchase()">${T[lang].save}</button>
+    </div>
+  `);
+  setTimeout(()=>document.getElementById('wpAmount').focus(), 50);
+}
+function submitWeeklyPurchase(){
+  const amt = parseFloat(document.getElementById('wpAmount').value);
+  const errEl = document.getElementById('wpError');
+  if(isNaN(amt) || amt<0){ errEl.textContent = T[lang].fillCustomer; return; }
+  saveWeeklyPurchase({ weekStart: getWeekStartStr(), amount: amt });
+  closeModal();
+  renderSummary();
+}
+
 function loadSales(){ try{ return JSON.parse(localStorage.getItem('duka_sales')||'[]'); }catch(e){ return []; } }
 function saveSales(arr){ localStorage.setItem('duka_sales', JSON.stringify(arr)); }
 function loadDebts(){ try{ return JSON.parse(localStorage.getItem('duka_debts')||'[]'); }catch(e){ return []; } }
@@ -598,6 +668,32 @@ function renderSummary(){
   document.getElementById('statSalesWeek').textContent = fmt(week);
   document.getElementById('statSalesMonth').textContent = fmt(month);
   document.getElementById('statDebtsOutstanding').textContent = fmt(outstanding);
+
+  const purchase = getCurrentWeekPurchaseAmount();
+  const calWeekSales = getCalendarWeekSalesTotal();
+  const diff = calWeekSales - purchase;
+
+  document.getElementById('statWeeklyPurchase').textContent = fmt(purchase);
+  const plEl = document.getElementById('statProfitLoss');
+  const labelEl = document.getElementById('profitLabel');
+
+  if(purchase === 0){
+    plEl.textContent = '—';
+    plEl.style.color = 'var(--muted)';
+    labelEl.textContent = T[lang].noPurchaseSet;
+  } else if(diff < 0){
+    plEl.textContent = '-' + fmt(Math.abs(diff));
+    plEl.style.color = 'var(--danger)';
+    labelEl.textContent = T[lang].toReachCost;
+  } else if(diff > 0){
+    plEl.textContent = '+' + fmt(diff);
+    plEl.style.color = 'var(--safe)';
+    labelEl.textContent = T[lang].profit;
+  } else {
+    plEl.textContent = '0';
+    plEl.style.color = 'var(--accent2)';
+    labelEl.textContent = T[lang].breakEven;
+  }
 }
 
 applyTranslations();
