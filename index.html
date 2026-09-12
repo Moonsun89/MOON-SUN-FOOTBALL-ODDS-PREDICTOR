@@ -1,327 +1,419 @@
 <!DOCTYPE html>
 <html lang="sw">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Analytics Pro - Real Time</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #0b1120;
-            color: #e2e8f0;
-            margin: 0;
-            padding: 15px;
-            min-height: 100vh;
-        }
-        h1 {
-            text-align: center;
-            color: #0ea5e9;
-            font-size: 22px;
-            margin-bottom: 5px;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-        .subtitle {
-            text-align: center;
-            font-size: 13px;
-            color: #64748b;
-            margin-bottom: 25px;
-        }
-        .container {
-            max-width: 600px;
-            margin: auto;
-        }
-        .btn-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-        }
-        button {
-            background-color: #1e293b;
-            color: #f8fafc;
-            border: 1px solid #0ea5e9;
-            padding: 12px;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-        button:hover {
-            background-color: #0ea5e9;
-            color: #0f172a;
-        }
-        .result-box {
-            margin-top: 25px;
-        }
-        .match-card {
-            background-color: #1e293b;
-            border-left: 4px solid #0ea5e9;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-        }
-        .match-header {
-            display: flex;
-            justify-content: space-between;
-            font-size: 12px;
-            color: #94a3b8;
-            border-bottom: 1px solid #334155;
-            padding-bottom: 5px;
-            margin-bottom: 10px;
-        }
-        .match-title {
-            font-size: 16px;
-            font-weight: bold;
-            color: #ffffff;
-            margin-bottom: 10px;
-        }
-        .stats-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            font-size: 12px;
-            background: #0f172a;
-            padding: 10px;
-            border-radius: 6px;
-            margin-bottom: 10px;
-        }
-        .stat-item span {
-            display: block;
-            color: #94a3b8;
-        }
-        .stat-item strong {
-            color: #38bdf8;
-            font-size: 14px;
-        }
-        .pick-box {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #0284c7;
-            padding: 10px;
-            border-radius: 6px;
-            font-weight: bold;
-        }
-        .total-odds-box {
-            margin-top: 20px;
-            background-color: #10b981;
-            color: #ffffff;
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-            font-size: 18px;
-            font-weight: bold;
-        }
-        .loading {
-            text-align: center;
-            color: #facc15;
-            font-weight: bold;
-            padding: 20px;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0b1f16">
+<title>Duka Hesabu</title>
+<style>
+  :root{
+    --bg1:#081712; --panel:#0f2818; --panel2:#0a1f14; --line:#1e3d2a;
+    --accent:#22c55e; --accent2:#f0b429; --text:#e8f3ec; --muted:#7fa08e;
+    --danger:#f87171; --safe:#4ade80;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
+    background:radial-gradient(circle at 20% 0%, #123322 0%, var(--bg1) 55%);
+    color:var(--text); margin:0; padding:12px; min-height:100dvh;
+    display:flex; flex-direction:column;
+  }
+  .container{max-width:520px;margin:0 auto;width:100%;flex:1;display:flex;flex-direction:column;}
+  header{display:flex;justify-content:space-between;align-items:center;padding:8px 2px 14px;}
+  header h1{margin:0;font-size:20px;font-weight:800;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;}
+  .lang-toggle{background:var(--panel2);border:1px solid var(--line);color:var(--text);
+    border-radius:20px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;}
+
+  .tabs{display:flex;gap:8px;margin-bottom:14px;}
+  .tab-btn{flex:1;padding:11px 6px;background:var(--panel);border:1px solid var(--line);
+    border-radius:10px;color:var(--muted);font-weight:700;font-size:13px;cursor:pointer;text-align:center;}
+  .tab-btn.active{background:var(--accent);color:#04210f;border-color:var(--accent);}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px;}
+  .stat-row{display:flex;gap:10px;}
+  .stat{flex:1;background:var(--panel2);border-radius:10px;padding:12px;text-align:center;}
+  .stat .label{font-size:11px;color:var(--muted);margin-bottom:4px;}
+  .stat .value{font-size:18px;font-weight:800;color:var(--accent2);}
+  .stat .value.debt{color:var(--danger);}
+
+  label{display:block;font-size:12.5px;color:var(--muted);margin:10px 0 4px;font-weight:600;}
+  input,select{width:100%;padding:11px;border-radius:8px;border:1px solid var(--line);
+    background:var(--panel2);color:var(--text);font-size:14px;}
+  .form-row{display:flex;gap:8px;}
+  .form-row > div{flex:1;}
+  .btn{width:100%;padding:13px;border-radius:10px;border:none;font-weight:800;
+    font-size:14px;cursor:pointer;margin-top:14px;}
+  .btn-primary{background:var(--accent);color:#04210f;}
+  .btn-danger{background:transparent;color:var(--danger);border:1px solid var(--danger);}
+
+  .filter-row{display:flex;gap:6px;margin:12px 0;}
+  .filter-btn{flex:1;padding:8px;background:var(--panel2);border:1px solid var(--line);
+    border-radius:8px;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;text-align:center;}
+  .filter-btn.active{background:var(--panel);color:var(--accent2);border-color:var(--accent2);}
+
+  .list-item{background:var(--panel2);border:1px solid var(--line);border-radius:10px;
+    padding:11px 13px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px;}
+  .li-main{flex:1;min-width:0;}
+  .li-title{font-weight:700;font-size:14px;}
+  .li-sub{font-size:11.5px;color:var(--muted);margin-top:2px;}
+  .li-amount{font-weight:800;font-size:15px;color:var(--accent2);white-space:nowrap;}
+  .li-amount.paid{color:var(--safe);}
+  .li-actions{display:flex;gap:6px;}
+  .icon-btn{background:none;border:none;font-size:16px;cursor:pointer;padding:4px;color:var(--muted);}
+
+  .badge{font-size:10px;font-weight:800;padding:3px 8px;border-radius:20px;}
+  .badge.unpaid{background:rgba(248,113,113,.15);color:var(--danger);}
+  .badge.paid{background:rgba(74,222,128,.15);color:var(--safe);}
+
+  .empty{text-align:center;color:var(--muted);font-size:13px;padding:24px 10px;}
+  footer{text-align:center;font-size:10.5px;color:var(--muted);margin-top:16px;}
+</style>
 </head>
 <body>
+<div class="container">
+  <header>
+    <h1 id="appTitle">💰 Duka Hesabu</h1>
+    <button class="lang-toggle" id="langBtn" onclick="toggleLang()">EN</button>
+  </header>
 
-    <div class="container">
-        <h1>Analytical Predictor</h1>
-        <div class="subtitle">Live API Data & Math Engine</div>
+  <div class="tabs">
+    <div class="tab-btn active" id="tabBtn-summary" onclick="showTab('summary')" data-i18n="tabSummary">Muhtasari</div>
+    <div class="tab-btn" id="tabBtn-sales" onclick="showTab('sales')" data-i18n="tabSales">Mauzo</div>
+    <div class="tab-btn" id="tabBtn-debts" onclick="showTab('debts')" data-i18n="tabDebts">Madeni</div>
+  </div>
 
-        <div class="btn-grid">
-            <button onclick="filterOdds(1.50)">Base: Odds 1.50</button>
-            <button onclick="filterOdds(2.00)">Safe: Odds 2.00</button>
-            <button onclick="filterOdds(5.00)">Mid: Odds 5.00</button>
-            <button onclick="filterOdds(20.00)">High: Odds 20.00+</button>
+  <!-- SUMMARY TAB -->
+  <div id="tab-summary">
+    <div class="card">
+      <div class="stat-row">
+        <div class="stat">
+          <div class="label" data-i18n="salesToday">Mauzo ya Leo</div>
+          <div class="value" id="statSalesToday">0</div>
         </div>
-
-        <div class="result-box" id="predictionResult">
-            <div id="matchesOutput" class="loading">
-                Connecting to Live API Servers...
-            </div>
+        <div class="stat">
+          <div class="label" data-i18n="debtsOutstanding">Madeni Yaliyobaki</div>
+          <div class="value debt" id="statDebtsOutstanding">0</div>
         </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="stat-row">
+        <div class="stat">
+          <div class="label" data-i18n="salesWeek">Mauzo Wiki Hii</div>
+          <div class="value" id="statSalesWeek">0</div>
+        </div>
+        <div class="stat">
+          <div class="label" data-i18n="salesMonth">Mauzo Mwezi Huu</div>
+          <div class="value" id="statSalesMonth">0</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SALES TAB -->
+  <div id="tab-sales" style="display:none;">
+    <div class="card">
+      <label data-i18n="itemName">Jina la Bidhaa</label>
+      <input type="text" id="saleItem" placeholder="Mfano: Sukari kg 1">
+      <div class="form-row">
+        <div>
+          <label data-i18n="price">Bei (kwa kimoja)</label>
+          <input type="number" id="salePrice" inputmode="decimal" placeholder="0">
+        </div>
+        <div>
+          <label data-i18n="qty">Idadi</label>
+          <input type="number" id="saleQty" inputmode="numeric" value="1">
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="addSale()" data-i18n="addSale">+ Ongeza Mauzo</button>
     </div>
 
-    <script>
-        let analyzedMatches = [];
+    <div class="filter-row">
+      <div class="filter-btn active" id="salesFilter-today" onclick="setSalesFilter('today')" data-i18n="fToday">Leo</div>
+      <div class="filter-btn" id="salesFilter-week" onclick="setSalesFilter('week')" data-i18n="fWeek">Wiki</div>
+      <div class="filter-btn" id="salesFilter-month" onclick="setSalesFilter('month')" data-i18n="fMonth">Mwezi</div>
+      <div class="filter-btn" id="salesFilter-all" onclick="setSalesFilter('all')" data-i18n="fAll">Zote</div>
+    </div>
+    <div id="salesList"></div>
+  </div>
 
-        function getHashValue(str) {
-            let hash = 0;
-            for (let i = 0; i < str.length; i++) {
-                hash += str.charCodeAt(i);
-            }
-            return hash;
-        }
+  <!-- DEBTS TAB -->
+  <div id="tab-debts" style="display:none;">
+    <div class="card">
+      <label data-i18n="customerName">Jina la Mteja</label>
+      <input type="text" id="debtCustomer" placeholder="Mfano: Juma Mwalimu">
+      <div class="form-row">
+        <div>
+          <label data-i18n="amount">Kiasi (Deni)</label>
+          <input type="number" id="debtAmount" inputmode="decimal" placeholder="0">
+        </div>
+        <div>
+          <label data-i18n="phone">Simu (hiari)</label>
+          <input type="text" id="debtPhone" inputmode="tel" placeholder="07XXXXXXXX">
+        </div>
+      </div>
+      <label data-i18n="itemDesc">Bidhaa/Maelezo</label>
+      <input type="text" id="debtDesc" placeholder="Mfano: Mchele gunia">
+      <button class="btn btn-primary" onclick="addDebt()" data-i18n="addDebt">+ Ongeza Deni</button>
+    </div>
 
-        function runMathEngine(fixture) {
-            let homeHash = getHashValue(fixture.homeTeam);
-            let awayHash = getHashValue(fixture.awayTeam);
-            
-            let homePower = 60 + (homeHash % 30);
-            let awayPower = 55 + (awayHash % 30); 
-            
-            let totalPower = homePower + awayPower;
-            let homeWinProb = (homePower / totalPower) * 100;
-            let awayWinProb = (awayPower / totalPower) * 100;
-            
-            let homeXG = ((homePower / 100) * 2.2).toFixed(2);
-            let awayXG = ((awayPower / 100) * 1.8).toFixed(2);
-            let totalXG = parseFloat(homeXG) + parseFloat(awayXG);
+    <div class="filter-row">
+      <div class="filter-btn active" id="debtsFilter-unpaid" onclick="setDebtsFilter('unpaid')" data-i18n="fUnpaid">Bado</div>
+      <div class="filter-btn" id="debtsFilter-paid" onclick="setDebtsFilter('paid')" data-i18n="fPaid">Yamelipwa</div>
+      <div class="filter-btn" id="debtsFilter-all2" onclick="setDebtsFilter('all')" data-i18n="fAll">Zote</div>
+    </div>
+    <div id="debtsList"></div>
+  </div>
 
-            let pick = "";
-            let confidence = 0;
-            let odd = 0;
+  <footer data-i18n="footer">Duka Hesabu · Data yako inabaki kwenye simu yako pekee</footer>
+</div>
 
-            if (homeWinProb > 60 && homeXG > 1.8) {
-                pick = "Home Win (1)";
-                confidence = homeWinProb;
-            } else if (awayWinProb > 55 && awayXG > 1.6) {
-                pick = "Away Win (2)";
-                confidence = awayWinProb;
-            } else if (totalXG > 2.8) {
-                pick = "Over 2.5 Goals";
-                confidence = (totalXG / 4) * 100;
-            } else if (homeXG > 1.0 && awayXG > 1.0) {
-                pick = "Both Teams to Score (GG)";
-                confidence = 65 + (totalXG * 5);
-            } else {
-                pick = "Under 3.5 Goals";
-                confidence = 75;
-            }
+<script>
+let lang = 'sw';
+let salesFilter = 'today';
+let debtsFilter = 'unpaid';
 
-            odd = (100 / confidence) * 1.05;
-            if (odd < 1.15) odd = 1.25;
+const T = {
+  sw: {
+    tabSummary:"Muhtasari", tabSales:"Mauzo", tabDebts:"Madeni",
+    salesToday:"Mauzo ya Leo", debtsOutstanding:"Madeni Yaliyobaki",
+    salesWeek:"Mauzo Wiki Hii", salesMonth:"Mauzo Mwezi Huu",
+    itemName:"Jina la Bidhaa", price:"Bei (kwa kimoja)", qty:"Idadi", addSale:"+ Ongeza Mauzo",
+    customerName:"Jina la Mteja", amount:"Kiasi (Deni)", phone:"Simu (hiari)",
+    itemDesc:"Bidhaa/Maelezo", addDebt:"+ Ongeza Deni",
+    fToday:"Leo", fWeek:"Wiki", fMonth:"Mwezi", fAll:"Zote", fUnpaid:"Bado", fPaid:"Yamelipwa",
+    noSales:"Hakuna mauzo bado kwa kipindi hiki.", noDebts:"Hakuna madeni kwa kipindi hiki.",
+    total:"Jumla", markPaid:"Amelipa", markUnpaid:"Bado", delete:"Futa",
+    confirmDelete:"Una uhakika unataka kufuta hii?",
+    footer:"Duka Hesabu · Data yako inabaki kwenye simu yako pekee",
+    fillItem:"Tafadhali jaza jina la bidhaa na bei.",
+    fillCustomer:"Tafadhali jaza jina la mteja na kiasi."
+  },
+  en: {
+    tabSummary:"Summary", tabSales:"Sales", tabDebts:"Debts",
+    salesToday:"Today's Sales", debtsOutstanding:"Outstanding Debts",
+    salesWeek:"This Week's Sales", salesMonth:"This Month's Sales",
+    itemName:"Item Name", price:"Price (per unit)", qty:"Quantity", addSale:"+ Add Sale",
+    customerName:"Customer Name", amount:"Amount (Debt)", phone:"Phone (optional)",
+    itemDesc:"Item/Description", addDebt:"+ Add Debt",
+    fToday:"Today", fWeek:"Week", fMonth:"Month", fAll:"All", fUnpaid:"Unpaid", fPaid:"Paid",
+    noSales:"No sales yet for this period.", noDebts:"No debts for this period.",
+    total:"Total", markPaid:"Mark Paid", markUnpaid:"Mark Unpaid", delete:"Delete",
+    confirmDelete:"Are you sure you want to delete this?",
+    footer:"Duka Hesabu · Your data stays on your phone only",
+    fillItem:"Please fill in the item name and price.",
+    fillCustomer:"Please fill in the customer name and amount."
+  }
+};
 
-            return {
-                homeTeam: fixture.homeTeam,
-                awayTeam: fixture.awayTeam,
-                league: fixture.league,
-                matchDate: fixture.matchDate,
-                matchTime: fixture.matchTime,
-                homePower: homePower.toFixed(0),
-                awayPower: awayPower.toFixed(0),
-                homeXG: homeXG,
-                awayXG: awayXG,
-                prediction: pick,
-                odd: odd.toFixed(2)
-            };
-        }
+function applyTranslations(){
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const key = el.getAttribute('data-i18n');
+    if(T[lang][key]) el.textContent = T[lang][key];
+  });
+  document.getElementById('langBtn').textContent = lang === 'sw' ? 'EN' : 'SW';
+  renderSales(); renderDebts(); renderSummary();
+}
 
-        async function fetchLiveMatches() {
-            const output = document.getElementById("matchesOutput");
-            let today = new Date().toISOString().split('T')[0];
+function toggleLang(){
+  lang = lang === 'sw' ? 'en' : 'sw';
+  applyTranslations();
+}
 
-            try {
-                let response = await fetch(`https://v3.football.api-sports.io/fixtures?date=${today}`, {
-                    method: "GET",
-                    headers: {
-                        "x-apisports-host": "v3.football.api-sports.io",
-                        "x-apisports-key": "c193872bdf2840ec86479caf47d36e20" 
-                    }
-                });
-                
-                let data = await response.json();
-                
-                if (data.response && data.response.length > 0) {
-                    let validFixtures = data.response.filter(match => match.fixture.status.short === "NS").slice(0, 50);
-                    
-                    if(validFixtures.length === 0) validFixtures = data.response.slice(0, 50);
+function showTab(name){
+  ['summary','sales','debts'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display = (t===name) ? 'block' : 'none';
+    document.getElementById('tabBtn-'+t).classList.toggle('active', t===name);
+  });
+  if(name==='summary') renderSummary();
+}
 
-                    analyzedMatches = validFixtures.map(match => {
-                        let matchDateObj = new Date(match.fixture.date);
-                        
-                        // Strict Timezone Formatting for Tanzania (EAT)
-                        let localTime = matchDateObj.toLocaleTimeString('sw-TZ', { 
-                            timeZone: 'Africa/Dar_es_Salaam', 
-                            hour: '2-digit', 
-                            minute: '2-digit' 
-                        });
-                        let localDate = matchDateObj.toLocaleDateString('sw-TZ', { 
-                            timeZone: 'Africa/Dar_es_Salaam', 
-                            day: '2-digit', 
-                            month: '2-digit', 
-                            year: 'numeric' 
-                        });
+function setSalesFilter(f){
+  salesFilter = f;
+  ['today','week','month','all'].forEach(k=>{
+    document.getElementById('salesFilter-'+k).classList.toggle('active', k===f);
+  });
+  renderSales();
+}
+function setDebtsFilter(f){
+  debtsFilter = f;
+  const map = {unpaid:'unpaid', paid:'paid', all:'all2'};
+  ['unpaid','paid','all'].forEach(k=>{
+    document.getElementById('debtsFilter-'+map[k]).classList.toggle('active', k===f);
+  });
+  renderDebts();
+}
 
-                        return runMathEngine({
-                            homeTeam: match.teams.home.name,
-                            awayTeam: match.teams.away.name,
-                            league: match.league.name,
-                            matchDate: localDate,
-                            matchTime: localTime
-                        });
-                    });
-                    
-                    output.innerHTML = "<span style='color: #10b981;'>✅ Live Data Fetched Successfully. Select your odds target.</span>";
-                } else {
-                    throw new Error("No match data returned from API.");
-                }
-            } catch (error) {
-                // Fake data removed completely. Shows exact error instead.
-                output.innerHTML = `<span style='color: #f87171;'>⚠️ Connection Failed. API could not fetch live matches. Reason: Network block or API Key limit reached. Please check your dashboard.</span>`;
-            }
-        }
+// ---- Storage ----
+function loadSales(){ try{ return JSON.parse(localStorage.getItem('duka_sales')||'[]'); }catch(e){ return []; } }
+function saveSales(arr){ localStorage.setItem('duka_sales', JSON.stringify(arr)); }
+function loadDebts(){ try{ return JSON.parse(localStorage.getItem('duka_debts')||'[]'); }catch(e){ return []; } }
+function saveDebts(arr){ localStorage.setItem('duka_debts', JSON.stringify(arr)); }
 
-        function filterOdds(targetOdd) {
-            const output = document.getElementById("matchesOutput");
-            
-            if (analyzedMatches.length === 0) {
-                return; // Do nothing if there's no real data
-            }
+function todayStr(d){
+  const dt = d || new Date();
+  return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+}
+function fmt(n){ return Number(n).toLocaleString(undefined,{maximumFractionDigits:0}); }
 
-            let shuffledMatches = [...analyzedMatches].sort(() => 0.5 - Math.random());
-            let selected = [];
-            let currentOdd = 1.0;
+// ---- Sales ----
+function addSale(){
+  const item = document.getElementById('saleItem').value.trim();
+  const price = parseFloat(document.getElementById('salePrice').value);
+  const qty = parseFloat(document.getElementById('saleQty').value) || 1;
+  if(!item || isNaN(price)){ alert(T[lang].fillItem); return; }
 
-            for (let match of shuffledMatches) {
-                if (currentOdd * match.odd <= targetOdd * 1.5) { 
-                    selected.push(match);
-                    currentOdd *= match.odd;
-                    if (currentOdd >= targetOdd * 0.92) break; 
-                }
-            }
+  const sales = loadSales();
+  sales.push({ id: Date.now(), item, price, qty, total: price*qty, ts: Date.now() });
+  saveSales(sales);
 
-            let html = ``;
+  document.getElementById('saleItem').value='';
+  document.getElementById('salePrice').value='';
+  document.getElementById('saleQty').value='1';
+  renderSales(); renderSummary();
+}
 
-            selected.forEach(m => {
-                html += `
-                    <div class="match-card">
-                        <div class="match-header">
-                            <span>🏆 ${m.league}</span>
-                            <span>📅 ${m.matchDate} | ⏰ ${m.matchTime}</span>
-                        </div>
-                        <div class="match-title">${m.homeTeam} vs ${m.awayTeam}</div>
-                        
-                        <div class="stats-grid">
-                            <div class="stat-item">
-                                <span>Power Index</span>
-                                <strong>${m.homePower} - ${m.awayPower}</strong>
-                            </div>
-                            <div class="stat-item">
-                                <span>Expected Goals (xG)</span>
-                                <strong>${m.homeXG} - ${m.awayXG}</strong>
-                            </div>
-                        </div>
+function deleteSale(id){
+  if(!confirm(T[lang].confirmDelete)) return;
+  saveSales(loadSales().filter(s=>s.id!==id));
+  renderSales(); renderSummary();
+}
 
-                        <div class="pick-box">
-                            <span>🎯 ${m.prediction}</span>
-                            <span>Odds: ${m.odd}</span>
-                        </div>
-                    </div>
-                `;
-            });
+function filterByPeriod(items, period){
+  const now = new Date();
+  return items.filter(it=>{
+    const d = new Date(it.ts);
+    if(period==='today') return todayStr(d)===todayStr(now);
+    if(period==='week'){
+      const diffDays = (now - d) / (1000*60*60*24);
+      return diffDays >= 0 && diffDays <= 7;
+    }
+    if(period==='month') return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth();
+    return true;
+  });
+}
 
-            html += `
-                <div class="total-odds-box">
-                    FINAL CALCULATION ODDS: ${currentOdd.toFixed(2)}
-                </div>
-            `;
+function renderSales(){
+  const list = document.getElementById('salesList');
+  if(!list) return;
+  const all = loadSales().sort((a,b)=>b.ts-a.ts);
+  const filtered = filterByPeriod(all, salesFilter);
 
-            output.innerHTML = html;
-        }
+  if(filtered.length===0){
+    list.innerHTML = `<div class="empty">${T[lang].noSales}</div>`;
+    return;
+  }
+  let total = 0;
+  let html = '';
+  filtered.forEach(s=>{
+    total += s.total;
+    const d = new Date(s.ts);
+    html += `
+      <div class="list-item">
+        <div class="li-main">
+          <div class="li-title">${s.item}</div>
+          <div class="li-sub">${s.qty} × ${fmt(s.price)} · ${d.toLocaleDateString()} ${d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
+        </div>
+        <div class="li-amount">${fmt(s.total)}</div>
+        <div class="li-actions"><button class="icon-btn" onclick="deleteSale(${s.id})" title="${T[lang].delete}">🗑️</button></div>
+      </div>`;
+  });
+  html += `<div class="card" style="text-align:center;font-weight:800;">${T[lang].total}: ${fmt(total)}</div>`;
+  list.innerHTML = html;
+}
 
-        fetchLiveMatches();
-    </script>
+// ---- Debts ----
+function addDebt(){
+  const customer = document.getElementById('debtCustomer').value.trim();
+  const amount = parseFloat(document.getElementById('debtAmount').value);
+  const phone = document.getElementById('debtPhone').value.trim();
+  const desc = document.getElementById('debtDesc').value.trim();
+  if(!customer || isNaN(amount)){ alert(T[lang].fillCustomer); return; }
+
+  const debts = loadDebts();
+  debts.push({ id: Date.now(), customer, amount, phone, desc, paid:false, ts: Date.now() });
+  saveDebts(debts);
+
+  document.getElementById('debtCustomer').value='';
+  document.getElementById('debtAmount').value='';
+  document.getElementById('debtPhone').value='';
+  document.getElementById('debtDesc').value='';
+  renderDebts(); renderSummary();
+}
+
+function toggleDebtPaid(id){
+  const debts = loadDebts();
+  const d = debts.find(x=>x.id===id);
+  if(d) d.paid = !d.paid;
+  saveDebts(debts);
+  renderDebts(); renderSummary();
+}
+
+function deleteDebt(id){
+  if(!confirm(T[lang].confirmDelete)) return;
+  saveDebts(loadDebts().filter(d=>d.id!==id));
+  renderDebts(); renderSummary();
+}
+
+function renderDebts(){
+  const list = document.getElementById('debtsList');
+  if(!list) return;
+  const all = loadDebts().sort((a,b)=>b.ts-a.ts);
+  let filtered = all;
+  if(debtsFilter==='unpaid') filtered = all.filter(d=>!d.paid);
+  if(debtsFilter==='paid') filtered = all.filter(d=>d.paid);
+
+  if(filtered.length===0){
+    list.innerHTML = `<div class="empty">${T[lang].noDebts}</div>`;
+    return;
+  }
+  let total = 0;
+  let html = '';
+  filtered.forEach(d=>{
+    if(!d.paid) total += d.amount;
+    const dt = new Date(d.ts);
+    html += `
+      <div class="list-item">
+        <div class="li-main">
+          <div class="li-title">${d.customer} ${d.phone ? '· '+d.phone : ''}</div>
+          <div class="li-sub">${d.desc || ''} ${d.desc ? '· ' : ''}${dt.toLocaleDateString()}
+            <span class="badge ${d.paid?'paid':'unpaid'}">${d.paid?T[lang].fPaid:T[lang].fUnpaid}</span>
+          </div>
+        </div>
+        <div class="li-amount ${d.paid?'paid':''}">${fmt(d.amount)}</div>
+        <div class="li-actions">
+          <button class="icon-btn" onclick="toggleDebtPaid(${d.id})" title="${d.paid?T[lang].markUnpaid:T[lang].markPaid}">${d.paid?'↩️':'✅'}</button>
+          <button class="icon-btn" onclick="deleteDebt(${d.id})" title="${T[lang].delete}">🗑️</button>
+        </div>
+      </div>`;
+  });
+  if(debtsFilter!=='paid'){
+    html += `<div class="card" style="text-align:center;font-weight:800;">${T[lang].total}: ${fmt(total)}</div>`;
+  }
+  list.innerHTML = html;
+}
+
+// ---- Summary ----
+function renderSummary(){
+  const sales = loadSales();
+  const debts = loadDebts();
+
+  const today = filterByPeriod(sales,'today').reduce((s,x)=>s+x.total,0);
+  const week = filterByPeriod(sales,'week').reduce((s,x)=>s+x.total,0);
+  const month = filterByPeriod(sales,'month').reduce((s,x)=>s+x.total,0);
+  const outstanding = debts.filter(d=>!d.paid).reduce((s,x)=>s+x.amount,0);
+
+  document.getElementById('statSalesToday').textContent = fmt(today);
+  document.getElementById('statSalesWeek').textContent = fmt(week);
+  document.getElementById('statSalesMonth').textContent = fmt(month);
+  document.getElementById('statDebtsOutstanding').textContent = fmt(outstanding);
+}
+
+applyTranslations();
+showTab('summary');
+</script>
 </body>
 </html>
- 
