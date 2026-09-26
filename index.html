@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0b1f16">
-<title>Duka Hesabu</title>
+<title>Moon Sun Ledger</title>
 <style>
   :root{
     --bg1:#081712; --panel:#0f2818; --panel2:#0a1f14; --line:#1e3d2a;
@@ -48,6 +48,7 @@
     font-size:14px;cursor:pointer;margin-top:14px;}
   .btn-primary{background:var(--accent);color:#04210f;}
   .btn-danger{background:transparent;color:var(--danger);border:1px solid var(--danger);}
+  .advice-btn{width:100%;padding:13px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-weight:700;font-size:13.5px;cursor:pointer;margin-top:14px;}
 
   .filter-row{display:flex;gap:6px;margin:12px 0;}
   .filter-btn{flex:1;padding:8px;background:var(--panel2);border:1px solid var(--line);
@@ -88,16 +89,52 @@
 </style>
 </head>
 <body>
-<div class="container">
+
+<!-- AUTH SCREEN -->
+<div id="authScreen" style="display:none;min-height:100dvh;display:flex;flex-direction:column;justify-content:center;padding:20px;max-width:420px;margin:0 auto;">
+  <div style="text-align:center;margin-bottom:24px;">
+    <h1 style="font-size:24px;font-weight:800;margin:0;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent;">🌙 Moon Sun Ledger ☀️</h1>
+    <div style="font-size:13px;color:var(--muted);margin-top:6px;" id="authSubtitle">Ingia kwenye akaunti yako</div>
+  </div>
+
+  <div class="card">
+    <div id="authError" style="color:var(--danger);font-size:13px;margin-bottom:8px;min-height:16px;"></div>
+    <label id="lblPhone">Namba ya Simu</label>
+    <input type="tel" id="authPhone" placeholder="07XXXXXXXX">
+    <label id="lblBusiness" style="display:none;">Jina la Duka (hiari)</label>
+    <input type="text" id="authBusiness" placeholder="Mfano: Duka la Juma" style="display:none;">
+    <label id="lblPin">PIN (namba 4)</label>
+    <input type="password" id="authPin" inputmode="numeric" maxlength="4" placeholder="••••">
+    <button class="btn btn-primary" id="authSubmitBtn" onclick="submitLogin()">Ingia</button>
+    <button class="advice-btn" id="authToggleBtn" onclick="toggleAuthMode()" style="margin-top:10px;">Huna akaunti? Jisajili hapa</button>
+  </div>
+</div>
+
+<!-- TRIAL BLOCKED SCREEN -->
+<div id="trialBlockedScreen" style="display:none;min-height:100dvh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:20px;text-align:center;">
+  <div style="font-size:40px;margin-bottom:10px;">⏳</div>
+  <h2 style="font-size:18px;">Muda wa Majaribio Umeisha</h2>
+  <p style="color:var(--muted);font-size:14px;max-width:340px;">Siku 60 za bure zimeisha. Tafadhali wasiliana na msimamizi wa Moon Sun Ledger kulipia ili kuendelea kutumia huduma.</p>
+  <button class="btn btn-danger" style="max-width:200px;" onclick="logout()">Toka (Logout)</button>
+</div>
+
+<div class="container" id="mainApp" style="display:none;">
+
   <header>
-    <h1 id="appTitle">💰 Duka Hesabu</h1>
+    <h1 id="appTitle">🌙 Moon Sun Ledger ☀️</h1>
     <button class="lang-toggle" id="langBtn" onclick="toggleLang()">EN</button>
   </header>
+
+  <div id="trialBanner" style="display:none;text-align:center;font-size:12px;color:var(--accent2);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px;margin-bottom:12px;">
+    <span id="trialBannerText"></span>
+    <button onclick="logout()" style="background:none;border:none;color:var(--danger);font-size:11px;font-weight:700;margin-left:8px;text-decoration:underline;">Logout</button>
+  </div>
 
   <div class="tabs">
     <div class="tab-btn active" id="tabBtn-summary" onclick="showTab('summary')" data-i18n="tabSummary">Muhtasari</div>
     <div class="tab-btn" id="tabBtn-sales" onclick="showTab('sales')" data-i18n="tabSales">Mauzo</div>
     <div class="tab-btn" id="tabBtn-debts" onclick="showTab('debts')" data-i18n="tabDebts">Madeni</div>
+    <div class="tab-btn" id="tabBtn-products" onclick="showTab('products')" data-i18n="tabProducts">Bidhaa</div>
     <div class="tab-btn quick-pay" onclick="openRecordPaymentModal()" title="Rekodi Malipo">💵</div>
   </div>
 
@@ -132,7 +169,6 @@
         </div>
       </div>
     </div>
-
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <div>
@@ -152,7 +188,7 @@
   <div id="tab-sales" style="display:none;">
     <div class="card">
       <label data-i18n="itemName">Jina la Bidhaa</label>
-      <input type="text" id="saleItem" placeholder="Mfano: Sukari kg 1">
+      <input type="text" id="saleItem" list="productList" placeholder="Mfano: Sukari kg 1">
       <div class="form-row">
         <div>
           <label data-i18n="price">Bei (kwa kimoja)</label>
@@ -165,6 +201,7 @@
       </div>
       <button class="btn btn-primary" onclick="addSale()" data-i18n="addSale">+ Ongeza Mauzo</button>
     </div>
+    <datalist id="productList"></datalist>
 
     <div class="filter-row">
       <div class="filter-btn active" id="salesFilter-today" onclick="setSalesFilter('today')" data-i18n="fToday">Leo</div>
@@ -191,7 +228,7 @@
         </div>
       </div>
       <label data-i18n="itemDesc">Bidhaa/Maelezo</label>
-      <input type="text" id="debtDesc" placeholder="Mfano: Mchele gunia">
+      <input type="text" id="debtDesc" list="productList" placeholder="Mfano: Mchele gunia">
       <button class="btn btn-primary" onclick="addDebt()" data-i18n="addDebt">+ Ongeza Deni</button>
     </div>
 
@@ -203,13 +240,162 @@
     <div id="debtsList"></div>
   </div>
 
-  <footer data-i18n="footer">Duka Hesabu · Data yako inabaki kwenye simu yako pekee</footer>
+  <!-- PRODUCTS TAB -->
+  <div id="tab-products" style="display:none;">
+    <div class="card">
+      <label data-i18n="productName">Jina la Bidhaa</label>
+      <input type="text" id="productName" placeholder="Mfano: Mchele">
+      <label data-i18n="purchaseAmount">Kiasi cha Manunuzi (Jumla)</label>
+      <input type="number" id="productPurchase" inputmode="decimal" placeholder="Mfano: 350000">
+      <button class="btn btn-primary" onclick="addProduct()" data-i18n="addProduct">+ Ongeza Bidhaa</button>
+    </div>
+    <div id="productsList"></div>
+  </div>
+
+  <button class="advice-btn" onclick="openSupportModal()" data-i18n="supportBtn">💬 Wasiliana na Msaada (Support)</button>
+
+  <footer data-i18n="footer">Moon Sun Ledger · Data yako inabaki kwenye simu yako pekee</footer>
 </div>
 
 <script>
 let lang = 'sw';
 let salesFilter = 'today';
 let debtsFilter = 'unpaid';
+
+// ---- Session & Cloud Data Layer ----
+let currentShopId = null;
+let currentBusinessName = null;
+let authMode = 'login'; // or 'signup'
+let salesCache = [];
+let debtsCache = [];
+let productsCache = [];
+
+async function apiAuth(payload){
+  const res = await fetch('/api/auth', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json().catch(()=>({}));
+  return { ok: res.ok, data };
+}
+
+async function apiData(table, action, extra){
+  if(action === 'list'){
+    const res = await fetch(`/api/data?table=${table}&shop_id=${currentShopId}`);
+    const data = await res.json().catch(()=>[]);
+    return { ok: res.ok, data };
+  }
+  const res = await fetch('/api/data', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ table, shop_id: currentShopId, action, ...extra })
+  });
+  const data = await res.json().catch(()=>({}));
+  return { ok: res.ok, data };
+}
+
+function saveSession(){
+  localStorage.setItem('msl_session', JSON.stringify({ shop_id: currentShopId, business_name: currentBusinessName }));
+}
+function clearSession(){
+  localStorage.removeItem('msl_session');
+}
+
+function toggleAuthMode(){
+  authMode = authMode === 'login' ? 'signup' : 'login';
+  document.getElementById('authSubtitle').textContent = authMode === 'login' ? 'Ingia kwenye akaunti yako' : 'Fungua akaunti mpya';
+  document.getElementById('lblBusiness').style.display = authMode === 'signup' ? 'block' : 'none';
+  document.getElementById('authBusiness').style.display = authMode === 'signup' ? 'block' : 'none';
+  document.getElementById('authSubmitBtn').textContent = authMode === 'login' ? 'Ingia' : 'Jisajili';
+  document.getElementById('authToggleBtn').textContent = authMode === 'login' ? 'Huna akaunti? Jisajili hapa' : 'Una akaunti? Ingia hapa';
+  document.getElementById('authError').textContent = '';
+}
+
+async function submitLogin(){
+  const phone = document.getElementById('authPhone').value.trim();
+  const pin = document.getElementById('authPin').value.trim();
+  const business_name = document.getElementById('authBusiness').value.trim();
+  const errEl = document.getElementById('authError');
+  errEl.textContent = '';
+
+  if(!phone || !pin){ errEl.textContent = 'Weka namba ya simu na PIN.'; return; }
+  if(authMode === 'signup' && pin.length !== 4){ errEl.textContent = 'PIN iwe na tarakimu 4.'; return; }
+
+  const { ok, data } = await apiAuth({ action: authMode, phone, pin, business_name });
+  if(!ok){ errEl.textContent = data.error || 'Hitilafu imetokea.'; return; }
+
+  currentShopId = data.shop_id;
+  currentBusinessName = data.business_name;
+  saveSession();
+  await enterApp(data);
+}
+
+function logout(){
+  clearSession();
+  currentShopId = null;
+  currentBusinessName = null;
+  document.getElementById('mainApp').style.display = 'none';
+  document.getElementById('trialBlockedScreen').style.display = 'none';
+  document.getElementById('authScreen').style.display = 'flex';
+  document.getElementById('authPhone').value = '';
+  document.getElementById('authPin').value = '';
+}
+
+async function enterApp(trialData){
+  if(!trialData.trialActive){
+    document.getElementById('authScreen').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'none';
+    document.getElementById('trialBlockedScreen').style.display = 'flex';
+    return;
+  }
+  document.getElementById('authScreen').style.display = 'none';
+  document.getElementById('trialBlockedScreen').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+
+  const banner = document.getElementById('trialBanner');
+  const bannerText = document.getElementById('trialBannerText');
+  if(trialData.daysLeft <= 10){
+    banner.style.display = 'block';
+    bannerText.textContent = `Siku ${trialData.daysLeft} za majaribio zimebaki.`;
+  } else {
+    banner.style.display = 'none';
+  }
+
+  await loadAllData();
+  applyTranslations();
+  showTab('summary');
+}
+
+async function loadAllData(){
+  const [salesRes, debtsRes, productsRes] = await Promise.all([
+    apiData('sales', 'list'),
+    apiData('debts', 'list'),
+    apiData('products', 'list'),
+  ]);
+  salesCache = (salesRes.data || []).map(s => ({ ...s }));
+  debtsCache = (debtsRes.data || []).map(d => ({ ...d, desc: d.description }));
+  productsCache = (productsRes.data || []).map(p => ({ ...p }));
+  updateProductDatalist();
+}
+
+async function checkExistingSession(){
+  const raw = localStorage.getItem('msl_session');
+  if(!raw){
+    document.getElementById('authScreen').style.display = 'flex';
+    return;
+  }
+  try{
+    const session = JSON.parse(raw);
+    currentShopId = session.shop_id;
+    currentBusinessName = session.business_name;
+    const { ok, data } = await apiAuth({ action: 'status', shop_id: currentShopId });
+    if(!ok){ logout(); return; }
+    await enterApp(data);
+  }catch(e){
+    logout();
+  }
+}
 
 const T = {
   sw: {
@@ -220,7 +406,16 @@ const T = {
     weeklyPurchaseLabel:"Kiasi ulichonunua bidhaa (wiki hii)", save:"Hifadhi",
     toReachCost:"Bado Kufikia Bei ya Bidhaa", profit:"Faida", breakEven:"Sawa na Gharama",
     noPurchaseSet:"Weka manunuzi ya wiki kuanza kulinganisha",
-    itemName:"Jina la Bidhaa", price:"Bei (kwa kimoja)", qty:"Idadi", addSale:"+ Ongeza Mauzo",
+    itemName:"Jina la Bidhaa", price:"Bei (kwa kimoja)",
+    qty:"Idadi", addSale:"+ Ongeza Mauzo",
+    tabProducts:"Bidhaa", productName:"Jina la Bidhaa", purchaseAmount:"Kiasi cha Manunuzi (Jumla)",
+    addProduct:"+ Ongeza Bidhaa", noProducts:"Hakuna bidhaa zilizosajiliwa bado.",
+    salesFromProduct:"Mauzo", debtsFromProduct:"Madeni",
+    fillProduct:"Tafadhali jaza jina la bidhaa na kiasi cha manunuzi.",
+    saveError:"Imeshindwa kuhifadhi. Angalia mtandao wako na ujaribu tena.",
+    supportBtn:"💬 Wasiliana na Msaada (Support)", supportTitle:"Tuma Ujumbe wa Msaada",
+    supportLabel:"Andika tatizo au swali lako hapa", send:"Tuma", supportEmpty:"Tafadhali andika ujumbe.",
+    supportSent:"Asante! Ujumbe wako umetumwa. Tutawasiliana nawe hivi karibuni.",
     customerName:"Jina la Mteja", amount:"Kiasi (Deni)", phone:"Simu (hiari)",
     itemDesc:"Bidhaa/Maelezo", addDebt:"+ Ongeza Deni",
     fToday:"Leo", fWeek:"Wiki", fMonth:"Mwezi", fAll:"Zote", fUnpaid:"Bado", fPaid:"Imelipwa",
@@ -228,12 +423,13 @@ const T = {
     enterPayment:"Weka kiasi analolipa sasa",
     noSales:"Hakuna mauzo bado kwa kipindi hiki.", noDebts:"Hakuna madeni kwa kipindi hiki.",
     total:"Jumla", grandTotal:"Jumla Kuu ya Madeni", markPaid:"Amelipa", markUnpaid:"Bado", delete:"Futa",
+    noticeTitle:"Taarifa", ok:"Sawa",
     confirmDelete:"Una uhakika unataka kufuta hii?",
     confirmDeleteTitle:"Futa Kipengele",
     cancel:"Ghairi",
     recordPayment:"Rekodi Malipo ya Mteja",
     noDebtFound:"Hakuna deni lililopatikana kwa jina hilo.",
-    footer:"Duka Hesabu · Data yako inabaki kwenye simu yako pekee",
+    footer:"Moon Sun Ledger · Data yako inabaki kwenye simu yako pekee",
     fillItem:"Tafadhali jaza jina la bidhaa na bei.",
     fillCustomer:"Tafadhali jaza jina la mteja na kiasi."
   },
@@ -245,7 +441,16 @@ const T = {
     weeklyPurchaseLabel:"Amount spent on stock (this week)", save:"Save",
     toReachCost:"Still to Reach Cost", profit:"Profit", breakEven:"Break Even",
     noPurchaseSet:"Set weekly purchase to start comparing",
-    itemName:"Item Name", price:"Price (per unit)", qty:"Quantity", addSale:"+ Add Sale",
+    itemName:"Item Name", price:"Price (per unit)",
+    qty:"Quantity", addSale:"+ Add Sale",
+    tabProducts:"Products", productName:"Product Name", purchaseAmount:"Purchase Amount (Total)",
+    addProduct:"+ Add Product", noProducts:"No products registered yet.",
+    salesFromProduct:"Sales", debtsFromProduct:"Debts",
+    fillProduct:"Please fill in the product name and purchase amount.",
+    saveError:"Couldn't save. Check your connection and try again.",
+    supportBtn:"💬 Contact Support", supportTitle:"Send a Support Message",
+    supportLabel:"Describe your issue or question here", send:"Send", supportEmpty:"Please write a message.",
+    supportSent:"Thank you! Your message has been sent. We'll be in touch soon.",
     customerName:"Customer Name", amount:"Amount (Debt)", phone:"Phone (optional)",
     itemDesc:"Item/Description", addDebt:"+ Add Debt",
     fToday:"Today", fWeek:"Week", fMonth:"Month", fAll:"All", fUnpaid:"Unpaid", fPaid:"Paid",
@@ -253,12 +458,13 @@ const T = {
     enterPayment:"Enter the amount they're paying now",
     noSales:"No sales yet for this period.", noDebts:"No debts for this period.",
     total:"Total", grandTotal:"Grand Total Owed", markPaid:"Mark Paid", markUnpaid:"Mark Unpaid", delete:"Delete",
+    noticeTitle:"Notice", ok:"OK",
     confirmDelete:"Are you sure you want to delete this?",
     confirmDeleteTitle:"Delete Item",
     cancel:"Cancel",
     recordPayment:"Record Customer Payment",
     noDebtFound:"No debt found under that name.",
-    footer:"Duka Hesabu · Your data stays on your phone only",
+    footer:"Moon Sun Ledger · Your data stays on your phone only",
     fillItem:"Please fill in the item name and price.",
     fillCustomer:"Please fill in the customer name and amount."
   }
@@ -270,7 +476,7 @@ function applyTranslations(){
     if(T[lang][key]) el.textContent = T[lang][key];
   });
   document.getElementById('langBtn').textContent = lang === 'sw' ? 'EN' : 'SW';
-  renderSales(); renderDebts(); renderSummary();
+  renderSales(); renderDebts(); renderSummary(); renderProducts();
 }
 
 function toggleLang(){
@@ -279,11 +485,12 @@ function toggleLang(){
 }
 
 function showTab(name){
-  ['summary','sales','debts'].forEach(t=>{
+  ['summary','sales','debts','products'].forEach(t=>{
     document.getElementById('tab-'+t).style.display = (t===name) ? 'block' : 'none';
     document.getElementById('tabBtn-'+t).classList.toggle('active', t===name);
   });
   if(name==='summary') renderSummary();
+  if(name==='products') renderProducts();
 }
 
 function setSalesFilter(f){
@@ -311,6 +518,44 @@ function closeModal(){
   document.getElementById('modalOverlay').style.display = 'none';
 }
 
+function showNotice(msg){
+  openModal(`
+    <div class="modal-title">⚠️ ${T[lang].noticeTitle}</div>
+    <div class="modal-body">${msg}</div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="closeModal()">${T[lang].ok}</button>
+    </div>
+  `);
+}
+
+function openSupportModal(){
+  openModal(`
+    <div class="modal-title">💬 ${T[lang].supportTitle}</div>
+    <label>${T[lang].supportLabel}</label>
+    <textarea id="supportMsg" rows="4" style="width:100%;padding:11px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-size:14px;"></textarea>
+    <div class="modal-error" id="supportError"></div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" onclick="closeModal()">${T[lang].cancel}</button>
+      <button class="btn btn-primary" onclick="submitSupport()">${T[lang].send}</button>
+    </div>
+  `);
+}
+
+async function submitSupport(){
+  const message = document.getElementById('supportMsg').value.trim();
+  const errEl = document.getElementById('supportError');
+  if(!message){ errEl.textContent = T[lang].supportEmpty; return; }
+
+  const res = await fetch('/api/support', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ shop_id: currentShopId, message })
+  });
+  if(!res.ok){ errEl.textContent = T[lang].saveError; return; }
+  closeModal();
+  showNotice(T[lang].supportSent);
+}
+
 function openRecordPaymentModal(){
   openModal(`
     <div class="modal-title">${T[lang].recordPayment}</div>
@@ -327,7 +572,7 @@ function openRecordPaymentModal(){
   setTimeout(()=>document.getElementById('rpCustomer').focus(), 50);
 }
 
-function submitRecordPayment(){
+async function submitRecordPayment(){
   const customer = document.getElementById('rpCustomer').value.trim();
   let amt = parseFloat(document.getElementById('rpAmount').value);
   const errEl = document.getElementById('rpError');
@@ -340,7 +585,7 @@ function submitRecordPayment(){
   const debts = loadDebts();
   const key = customer.toLowerCase();
   const custDebts = debts.filter(d=>d.customer.trim().toLowerCase()===key && getRemaining(d)>0)
-                          .sort((a,b)=>a.ts-b.ts);
+                          .sort((a,b)=>new Date(a.ts)-new Date(b.ts));
 
   if(custDebts.length===0){
     errEl.textContent = T[lang].noDebtFound;
@@ -351,12 +596,11 @@ function submitRecordPayment(){
     if(amt<=0) break;
     const remaining = getRemaining(d);
     const pay = Math.min(remaining, amt);
-    if(!d.payments) d.payments = [];
-    d.payments.push({ amt: pay, ts: Date.now() });
-    if(getRemaining(d) <= 0) d.paid = true;
+    const newPayments = [...(d.payments||[]), { amt: pay, ts: Date.now() }];
+    const { ok } = await apiData('debts', 'update', { id: d.id, data: { payments: newPayments } });
+    if(ok) d.payments = newPayments;
     amt -= pay;
   }
-  saveDebts(debts);
   closeModal();
   showTab('debts');
   setDebtsFilter('all');
@@ -368,16 +612,18 @@ function confirmDeleteModal(kind, id){
     <div class="modal-body">${T[lang].confirmDelete}</div>
     <div class="modal-actions">
       <button class="btn btn-danger" onclick="closeModal()">${T[lang].cancel}</button>
-      <button class="btn btn-primary" onclick="${kind==='sale' ? 'doDeleteSale' : 'doDeleteDebt'}(${id})">${T[lang].delete}</button>
+      <button class="btn btn-primary" onclick="${kind==='sale' ? 'doDeleteSale' : 'doDeleteDebt'}('${id}')">${T[lang].delete}</button>
     </div>
   `);
 }
-function doDeleteSale(id){
+async function doDeleteSale(id){
+  await apiData('sales', 'delete', { id });
   saveSales(loadSales().filter(s=>s.id!==id));
   closeModal();
   renderSales(); renderSummary();
 }
-function doDeleteDebt(id){
+async function doDeleteDebt(id){
+  await apiData('debts', 'delete', { id });
   saveDebts(loadDebts().filter(d=>d.id!==id));
   closeModal();
   renderDebts(); renderSummary();
@@ -430,10 +676,100 @@ function submitWeeklyPurchase(){
   renderSummary();
 }
 
-function loadSales(){ try{ return JSON.parse(localStorage.getItem('duka_sales')||'[]'); }catch(e){ return []; } }
-function saveSales(arr){ localStorage.setItem('duka_sales', JSON.stringify(arr)); }
-function loadDebts(){ try{ return JSON.parse(localStorage.getItem('duka_debts')||'[]'); }catch(e){ return []; } }
-function saveDebts(arr){ localStorage.setItem('duka_debts', JSON.stringify(arr)); }
+// ---- Products (Bidhaa / Stock Ledger) ----
+function loadProducts(){ return productsCache; }
+function saveProducts(arr){ productsCache = arr; }
+
+async function addProduct(){
+  const name = document.getElementById('productName').value.trim();
+  const purchase = parseFloat(document.getElementById('productPurchase').value);
+  if(!name || isNaN(purchase) || purchase<=0){ showNotice(T[lang].fillProduct); return; }
+
+  const { ok, data } = await apiData('products', 'create', { data: { name, purchase } });
+  if(!ok || !data || !data[0]){ showNotice(T[lang].saveError); return; }
+  productsCache.push(data[0]);
+
+  document.getElementById('productName').value='';
+  document.getElementById('productPurchase').value='';
+  renderProducts();
+}
+
+function deleteProduct(id){
+  openModal(`
+    <div class="modal-title">${T[lang].confirmDeleteTitle}</div>
+    <div class="modal-body">${T[lang].confirmDelete}</div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" onclick="closeModal()">${T[lang].cancel}</button>
+      <button class="btn btn-primary" onclick="doDeleteProduct('${id}')">${T[lang].delete}</button>
+    </div>
+  `);
+}
+async function doDeleteProduct(id){
+  await apiData('products', 'delete', { id });
+  saveProducts(loadProducts().filter(p=>p.id!==id));
+  closeModal();
+  renderProducts();
+}
+
+function updateProductDatalist(){
+  const dl = document.getElementById('productList');
+  if(!dl) return;
+  dl.innerHTML = loadProducts().map(p=>`<option value="${p.name}">`).join('');
+}
+
+function getProductLedger(product){
+  const key = product.name.trim().toLowerCase();
+  const salesSum = loadSales()
+    .filter(s=>s.item.trim().toLowerCase()===key)
+    .reduce((s,x)=>s+x.total, 0);
+  const debtSum = loadDebts()
+    .filter(d=>(d.desc||'').trim().toLowerCase()===key)
+    .reduce((s,x)=>s+x.amount, 0);
+  const recovered = salesSum + debtSum;
+  const remaining = product.purchase - recovered;
+  return { salesSum, debtSum, recovered, remaining };
+}
+
+function renderProducts(){
+  updateProductDatalist();
+  const list = document.getElementById('productsList');
+  if(!list) return;
+  const products = loadProducts().sort((a,b)=>b.ts-a.ts);
+
+  if(products.length===0){
+    list.innerHTML = `<div class="empty">${T[lang].noProducts}</div>`;
+    return;
+  }
+
+  let html = '';
+  products.forEach(p=>{
+    const l = getProductLedger(p);
+    const remainingColor = l.remaining > 0 ? 'var(--danger)' : (l.remaining < 0 ? 'var(--safe)' : 'var(--accent2)');
+    const remainingText = l.remaining > 0
+      ? `-${fmt(l.remaining)} (${T[lang].toReachCost})`
+      : (l.remaining < 0 ? `+${fmt(Math.abs(l.remaining))} (${T[lang].profit})` : T[lang].breakEven);
+
+    html += `
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <div style="font-weight:800;font-size:15px;">📦 ${p.name}</div>
+          <button class="icon-btn" onclick="deleteProduct('${p.id}')" title="${T[lang].delete}">🗑️</button>
+        </div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.8;">
+          ${T[lang].purchaseAmount}: <b style="color:var(--text);">${fmt(p.purchase)}</b><br>
+          ${T[lang].salesFromProduct}: <b style="color:var(--text);">${fmt(l.salesSum)}</b><br>
+          ${T[lang].debtsFromProduct}: <b style="color:var(--text);">${fmt(l.debtSum)}</b>
+        </div>
+        <div style="margin-top:8px;font-weight:800;font-size:15px;color:${remainingColor};">${remainingText}</div>
+      </div>`;
+  });
+  list.innerHTML = html;
+}
+
+function loadSales(){ return salesCache; }
+function saveSales(arr){ salesCache = arr; }
+function loadDebts(){ return debtsCache; }
+function saveDebts(arr){ debtsCache = arr; }
 
 function todayStr(d){
   const dt = d || new Date();
@@ -442,15 +778,15 @@ function todayStr(d){
 function fmt(n){ return Number(n).toLocaleString(undefined,{maximumFractionDigits:0}); }
 
 // ---- Sales ----
-function addSale(){
+async function addSale(){
   const item = document.getElementById('saleItem').value.trim();
   const price = parseFloat(document.getElementById('salePrice').value);
   const qty = parseFloat(document.getElementById('saleQty').value) || 1;
-  if(!item || isNaN(price)){ alert(T[lang].fillItem); return; }
+  if(!item || isNaN(price)){ showNotice(T[lang].fillItem); return; }
 
-  const sales = loadSales();
-  sales.push({ id: Date.now(), item, price, qty, total: price*qty, ts: Date.now() });
-  saveSales(sales);
+  const { ok, data } = await apiData('sales', 'create', { data: { item, price, qty, total: price*qty } });
+  if(!ok || !data || !data[0]){ showNotice(T[lang].saveError); return; }
+  salesCache.push(data[0]);
 
   document.getElementById('saleItem').value='';
   document.getElementById('salePrice').value='';
@@ -498,7 +834,7 @@ function renderSales(){
           <div class="li-sub">${s.qty} × ${fmt(s.price)} · ${d.toLocaleDateString()} ${d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
         </div>
         <div class="li-amount">${fmt(s.total)}</div>
-        <div class="li-actions"><button class="icon-btn" onclick="deleteSale(${s.id})" title="${T[lang].delete}">🗑️</button></div>
+        <div class="li-actions"><button class="icon-btn" onclick="deleteSale('${s.id}')" title="${T[lang].delete}">🗑️</button></div>
       </div>`;
   });
   html += `<div class="card" style="text-align:center;font-weight:800;">${T[lang].total}: ${fmt(total)}</div>`;
@@ -506,16 +842,18 @@ function renderSales(){
 }
 
 // ---- Debts ----
-function addDebt(){
+async function addDebt(){
   const customer = document.getElementById('debtCustomer').value.trim();
   const amount = parseFloat(document.getElementById('debtAmount').value);
   const phone = document.getElementById('debtPhone').value.trim();
   const desc = document.getElementById('debtDesc').value.trim();
-  if(!customer || isNaN(amount)){ alert(T[lang].fillCustomer); return; }
+  if(!customer || isNaN(amount)){ showNotice(T[lang].fillCustomer); return; }
 
-  const debts = loadDebts();
-  debts.push({ id: Date.now(), customer, amount, phone, desc, paid:false, ts: Date.now() });
-  saveDebts(debts);
+  const { ok, data } = await apiData('debts', 'create', { data: { customer, amount, phone, description: desc } });
+  if(!ok || !data || !data[0]){ showNotice(T[lang].saveError); return; }
+  const row = data[0];
+  row.desc = row.description;
+  debtsCache.push(row);
 
   document.getElementById('debtCustomer').value='';
   document.getElementById('debtAmount').value='';
@@ -564,13 +902,13 @@ function payDebt(id){
     <div class="modal-error" id="payError"></div>
     <div class="modal-actions">
       <button class="btn btn-danger" onclick="closeModal()">${T[lang].cancel}</button>
-      <button class="btn btn-primary" onclick="submitPayDebt(${id})">${T[lang].pay}</button>
+      <button class="btn btn-primary" onclick="submitPayDebt('${id}')">${T[lang].pay}</button>
     </div>
   `);
   setTimeout(()=>document.getElementById('payAmount').focus(), 50);
 }
 
-function submitPayDebt(id){
+async function submitPayDebt(id){
   const amt = parseFloat(document.getElementById('payAmount').value);
   const errEl = document.getElementById('payError');
   if(isNaN(amt) || amt<=0){ errEl.textContent = T[lang].fillCustomer; return; }
@@ -579,10 +917,11 @@ function submitPayDebt(id){
   const d = debts.find(x=>x.id===id);
   if(!d) { closeModal(); return; }
   const remaining = getRemaining(d);
-  if(!d.payments) d.payments = [];
-  d.payments.push({ amt: Math.min(amt, remaining), ts: Date.now() });
-  if(getRemaining(d) <= 0) d.paid = true;
-  saveDebts(debts);
+  const newPayments = [...(d.payments||[]), { amt: Math.min(amt, remaining), ts: Date.now() }];
+
+  const { ok } = await apiData('debts', 'update', { id, data: { payments: newPayments } });
+  if(!ok){ errEl.textContent = T[lang].saveError; return; }
+  d.payments = newPayments;
   closeModal();
   renderDebts(); renderSummary();
 }
@@ -634,8 +973,8 @@ function renderDebts(){
           </div>
           <div class="li-amount ${remaining<=0?'paid':''}">${fmt(remaining)}</div>
           <div class="li-actions">
-            ${remaining > 0 ? `<button class="icon-btn" onclick="payDebt(${d.id})" title="${T[lang].pay}">💰</button>` : ''}
-            <button class="icon-btn" onclick="deleteDebt(${d.id})" title="${T[lang].delete}">🗑️</button>
+            ${remaining > 0 ? `<button class="icon-btn" onclick="payDebt('${d.id}')" title="${T[lang].pay}">💰</button>` : ''}
+            <button class="icon-btn" onclick="deleteDebt('${d.id}')" title="${T[lang].delete}">🗑️</button>
           </div>
         </div>`;
     });
@@ -696,8 +1035,7 @@ function renderSummary(){
   }
 }
 
-applyTranslations();
-showTab('summary');
+checkExistingSession();
 </script>
 </body>
 </html>
