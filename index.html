@@ -104,7 +104,10 @@
     <label id="lblBusiness" style="display:none;">Jina la Duka (hiari)</label>
     <input type="text" id="authBusiness" placeholder="Mfano: Duka la Juma" style="display:none;">
     <label id="lblPin">PIN (namba 4)</label>
-    <input type="password" id="authPin" inputmode="numeric" maxlength="4" placeholder="••••">
+    <div style="position:relative;">
+      <input type="password" id="authPin" inputmode="numeric" maxlength="4" placeholder="••••">
+      <button type="button" onclick="togglePinVisibility()" style="position:absolute;right:10px;top:9px;background:none;border:none;font-size:18px;cursor:pointer;" id="pinToggleBtn">👁️</button>
+    </div>
     <button class="btn btn-primary" id="authSubmitBtn" onclick="submitLogin()">Ingia</button>
     <button class="advice-btn" id="authToggleBtn" onclick="toggleAuthMode()" style="margin-top:10px;">Huna akaunti? Jisajili hapa</button>
   </div>
@@ -276,7 +279,7 @@ async function apiAuth(payload){
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify(payload)
   });
-  const data = await res.json().catch(()=>({}));
+  const data = await res.json().catch(()=>({ error: `Seva haikujibu vizuri (HTTP ${res.status}). Angalia kama api/auth.js imepakiwa sahihi.` }));
   return { ok: res.ok, data };
 }
 
@@ -300,6 +303,18 @@ function saveSession(){
 }
 function clearSession(){
   localStorage.removeItem('msl_session');
+}
+
+function togglePinVisibility(){
+  const pinField = document.getElementById('authPin');
+  const btn = document.getElementById('pinToggleBtn');
+  if(pinField.type === 'password'){
+    pinField.type = 'text';
+    btn.textContent = '🙈';
+  } else {
+    pinField.type = 'password';
+    btn.textContent = '👁️';
+  }
 }
 
 function toggleAuthMode(){
@@ -355,12 +370,9 @@ async function enterApp(trialData){
 
   const banner = document.getElementById('trialBanner');
   const bannerText = document.getElementById('trialBannerText');
-  if(trialData.daysLeft <= 10){
-    banner.style.display = 'block';
-    bannerText.textContent = `Siku ${trialData.daysLeft} za majaribio zimebaki.`;
-  } else {
-    banner.style.display = 'none';
-  }
+  banner.style.display = 'block';
+  bannerText.textContent = `⏳ Siku ${trialData.daysLeft} za majaribio zimebaki`;
+  banner.style.color = trialData.daysLeft <= 10 ? 'var(--danger)' : 'var(--accent2)';
 
   await loadAllData();
   applyTranslations();
